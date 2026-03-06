@@ -1,6 +1,11 @@
 import { createRouter, createWebHistory } from "vue-router";
 import { useAuthStore } from "@/stores/auth";
 
+import NProgress from 'nprogress'
+import 'nprogress/nprogress.css'
+
+NProgress.configure({ showSpinner: false, speed: 300 })
+
 /**
  * Vaultly Router
  *
@@ -229,34 +234,67 @@ const router = createRouter({
  * Navigation guard — runs before every route change.
  */
 router.beforeEach(async (to, from, next) => {
+  NProgress.start();
+
   const auth = useAuthStore();
 
-  // Restore session on first load if token exists but user is not loaded
   if (auth.token && !auth.user) {
     await auth.fetchUser();
   }
 
-  // Guests only — redirect logged in users away from auth pages
   if (to.meta.requiresGuest && auth.isAuthenticated) {
+    NProgress.done();
     return next({ name: "home" });
   }
 
-  // Auth required — redirect guests to login
   if (to.meta.requiresAuth && !auth.isAuthenticated) {
+    NProgress.done();
     return next({ name: "login", query: { redirect: to.fullPath } });
   }
 
-  // Seller required
   if (to.meta.requiresSeller && !auth.isSeller) {
+    NProgress.done();
     return next({ name: "home" });
   }
 
-  // Admin required
   if (to.meta.requiresAdmin && !auth.isAdmin) {
+    NProgress.done();
     return next({ name: "home" });
   }
 
+  NProgress.done();
   next();
 });
+
+router.afterEach((to) => {
+  const titleMap = {
+    'home':                'Vaultly — Digital Marketplace',
+    'browse':              'Browse Products — Vaultly',
+    'login':               'Log In — Vaultly',
+    'register':            'Create Account — Vaultly',
+    'verify-email':        'Verify Email — Vaultly',
+    'forgot-password':     'Forgot Password — Vaultly',
+    'reset-password':      'Reset Password — Vaultly',
+    'purchases':           'My Purchases — Vaultly',
+    'checkout':            'Checkout — Vaultly',
+    'notifications':       'Notifications — Vaultly',
+    'messages':            'Messages — Vaultly',
+    'settings':            'Settings — Vaultly',
+    'become-seller':       'Become a Seller — Vaultly',
+    'seller-dashboard':    'Seller Dashboard — Vaultly',
+    'seller-products':     'My Products — Vaultly',
+    'seller-product-create': 'New Product — Vaultly',
+    'seller-store':        'Store Settings — Vaultly',
+    'seller-payouts':      'Payouts — Vaultly',
+    'admin-dashboard':     'Admin Dashboard — Vaultly',
+    'admin-users':         'Users — Vaultly Admin',
+    'admin-products':      'Products — Vaultly Admin',
+    'admin-applications':  'Applications — Vaultly Admin',
+    'admin-refunds':       'Refunds — Vaultly Admin',
+    'admin-payouts':       'Payouts — Vaultly Admin',
+  }
+
+  document.title = titleMap[to.name] || 'Vaultly'
+})
 
 export default router;

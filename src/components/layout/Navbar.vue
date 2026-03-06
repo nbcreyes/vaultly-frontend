@@ -152,8 +152,8 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { onClickOutside } from '@vueuse/core'
 import { useAuthStore } from '@/stores/auth'
 import { useNotificationsStore } from '@/stores/notifications'
@@ -161,10 +161,16 @@ import { useNotificationsStore } from '@/stores/notifications'
 const auth          = useAuthStore()
 const notifications = useNotificationsStore()
 const router        = useRouter()
+const route         = useRoute()
 
-const searchQuery  = ref('')
+const searchQuery  = ref(route.query.q || '')
 const userMenuOpen = ref(false)
 const userMenuRef  = ref(null)
+
+// Keep search input in sync with URL
+watch(() => route.query.q, (q) => {
+  searchQuery.value = q || ''
+})
 
 onClickOutside(userMenuRef, () => {
   userMenuOpen.value = false
@@ -173,7 +179,6 @@ onClickOutside(userMenuRef, () => {
 function handleSearch() {
   if (searchQuery.value.trim()) {
     router.push({ name: 'browse', query: { q: searchQuery.value.trim() } })
-    searchQuery.value = ''
   }
 }
 

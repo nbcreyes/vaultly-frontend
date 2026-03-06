@@ -81,3 +81,8 @@
     @apply badge bg-gray-100 text-gray-800;
   }
 }
+
+#nprogress .bar {
+  background: theme('colors.brand.600') !important;
+  height: 3px !important;
+}
