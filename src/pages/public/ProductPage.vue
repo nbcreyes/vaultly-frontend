@@ -261,7 +261,7 @@ function handleBuy() {
   }
   cart.clearCart()
   cart.addItem(product.value)
-  router.push({ name: 'purchases' })
+  router.push({ name: 'checkout' })
 }
 
 onMounted(fetchProduct)
