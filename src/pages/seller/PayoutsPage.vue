@@ -87,7 +87,7 @@ onMounted(async () => {
       sellerApi.dashboardSummary(),
       sellerApi.getPayouts(),
     ])
-    balance.value = summaryRes.data.data?.available_balance || 0
+    balance.value = summaryRes.data.data?.balance?.available ?? summaryRes.data.data?.available_balance ?? 0
     payouts.value = payoutsRes.data.data || []
   } catch (err) { console.error(err) } finally {
     loading.value = false

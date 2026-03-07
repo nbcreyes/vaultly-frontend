@@ -22,7 +22,7 @@
     <div class="p-4">
       <!-- Category badge -->
       <span v-if="product.category" class="badge-gray text-xs mb-2 inline-block">
-        {{ product.category }}
+        {{ product.category?.name || product.category }}
       </span>
 
       <!-- Title -->

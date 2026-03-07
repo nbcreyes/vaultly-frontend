@@ -286,25 +286,31 @@ onMounted(async () => {
       browseApi.categories(),
     ])
 
-    product.value         = productRes.data.data
+    // API wraps product under data.product
+    const raw             = productRes.data.data
+    product.value         = raw?.product ?? raw
     existingImages.value  = product.value.images || []
-    categories.value      = Array.isArray(catsRes.data.data)
-      ? catsRes.data.data
-      : Object.values(catsRes.data.data || {})
+
+    // Categories nested under data.categories
+    const catsRaw    = catsRes.data.data
+    categories.value = catsRaw?.categories ?? (Array.isArray(catsRaw) ? catsRaw : [])
 
     const p = product.value
     Object.assign(form, {
       title:             p.title             || '',
       short_description: p.short_description || '',
       description:       p.description       || '',
-      category_id:       p.category_id       || '',
+      category_id:       p.category?.id      || p.category_id || '',
       license_type:      p.license_type      || 'commercial',
       price:             p.price             || '',
       version:           p.version           || '',
     })
 
-    tagsInput.value = (p.tags || []).join(', ')
+    // Tags are objects {id, name, slug} — extract name strings
+    tagsInput.value = (p.tags || []).map(t => t.name ?? t).join(', ')
+
   } catch (err) {
+    console.error(err)
     error.value = 'Failed to load product.'
   } finally {
     loading.value = false

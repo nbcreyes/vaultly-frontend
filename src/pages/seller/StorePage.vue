@@ -51,18 +51,18 @@
           </div>
 
           <div>
-            <label class="label">Bio</label>
-            <textarea v-model="form.bio" class="input min-h-[80px] resize-none" placeholder="Tell buyers about your store..." />
+            <label class="label">Store description</label>
+            <textarea v-model="form.store_description" class="input min-h-[80px] resize-none" placeholder="Tell buyers about your store..." />
           </div>
 
           <div>
             <label class="label">Website</label>
-            <input v-model="form.website" type="url" class="input" placeholder="https://yoursite.com" />
+            <input v-model="form.website_url" type="url" class="input" placeholder="https://yoursite.com" />
           </div>
 
           <div>
             <label class="label">Twitter</label>
-            <input v-model="form.twitter" type="text" class="input" placeholder="@handle" />
+            <input v-model="form.twitter_url" type="text" class="input" placeholder="@handle" />
           </div>
 
           <button @click="save" :disabled="saving" class="btn-primary">
@@ -89,21 +89,22 @@ const error   = ref('')
 const store   = ref({})
 
 const form = reactive({
-  store_name: '',
-  bio:        '',
-  website:    '',
-  twitter:    '',
+  store_name:        '',
+  store_description: '',
+  website_url:       '',
+  twitter_url:       '',
 })
 
 onMounted(async () => {
   try {
     const response = await sellerApi.getStore()
-    store.value    = response.data.data || {}
+    // API returns data.store
+    store.value = response.data.data?.store || response.data.data || {}
     Object.assign(form, {
-      store_name: store.value.store_name || '',
-      bio:        store.value.bio        || '',
-      website:    store.value.website    || '',
-      twitter:    store.value.twitter    || '',
+      store_name:        store.value.store_name        || '',
+      store_description: store.value.store_description || '',
+      website_url:       store.value.website_url       || '',
+      twitter_url:       store.value.twitter_url       || '',
     })
   } catch (err) { console.error(err) } finally {
     loading.value = false
@@ -116,7 +117,8 @@ async function save() {
   error.value   = ''
   try {
     const response = await sellerApi.updateStore(form)
-    store.value    = response.data.data
+    const raw      = response.data.data
+    store.value    = raw?.store || raw || {}
     success.value  = true
   } catch (err) {
     error.value = err.message || 'Failed to save.'
@@ -131,7 +133,7 @@ async function uploadLogo(event) {
   const fd = new FormData()
   fd.append('logo', file)
   try {
-    const response   = await sellerApi.uploadLogo(fd)
+    const response       = await sellerApi.uploadLogo(fd)
     store.value.logo_url = response.data.data?.logo_url
   } catch (err) { error.value = err.message }
 }
@@ -142,7 +144,7 @@ async function uploadBanner(event) {
   const fd = new FormData()
   fd.append('banner', file)
   try {
-    const response      = await sellerApi.uploadBanner(fd)
+    const response         = await sellerApi.uploadBanner(fd)
     store.value.banner_url = response.data.data?.banner_url
   } catch (err) { error.value = err.message }
 }

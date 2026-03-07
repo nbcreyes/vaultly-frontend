@@ -10,20 +10,22 @@
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <div class="card p-5">
             <p class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Balance</p>
-            <p class="text-2xl font-bold text-gray-900">{{ formatPrice(summary.available_balance) }}</p>
+            <p class="text-2xl font-bold text-gray-900">{{ formatPrice(summary.available_balance ?? 0) }}</p>
           </div>
           <div class="card p-5">
             <p class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Total Earned</p>
-            <p class="text-2xl font-bold text-gray-900">{{ formatPrice(summary.total_earned) }}</p>
+            <p class="text-2xl font-bold text-gray-900">{{ formatPrice(summary.total_earned ?? 0) }}</p>
           </div>
           <div class="card p-5">
             <p class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Total Sales</p>
-            <p class="text-2xl font-bold text-gray-900">{{ summary.total_sales }}</p>
+            <p class="text-2xl font-bold text-gray-900">{{ summary.total_sales ?? 0 }}</p>
           </div>
           <div class="card p-5">
             <p class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Avg Rating</p>
             <p class="text-2xl font-bold text-gray-900">
-              {{ summary.average_rating ? summary.average_rating + ' ★' : '—' }}
+              <p class="text-2xl font-bold text-gray-900">
+  {{ summary.average_rating ? Number(summary.average_rating).toFixed(1) + ' ★' : '—' }}
+</p>
             </p>
           </div>
         </div>
@@ -108,27 +110,26 @@ import SellerLayout from '@/components/layout/SellerLayout.vue'
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 
-const loading       = ref(true)
+const loading        = ref(true)
 const revenueLoading = ref(false)
-const summary       = ref({})
-const recentSales   = ref([])
-const topProducts   = ref([])
-const revenueSeries = ref([])
-const revenueTotal  = ref(0)
-const revenuePeriod = ref('30d')
+const summary        = ref({ available_balance: 0, total_earned: 0, total_sales: 0, average_rating: null })
+const recentSales    = ref([])
+const topProducts    = ref([])
+const revenueSeries  = ref([])
+const revenueTotal   = ref(0)
+const revenuePeriod  = ref('30d')
 
 function barHeight(value) {
-  const max = Math.max(...revenueSeries.value.map((p) => p.revenue), 1)
-  const pct = Math.max((value / max) * 100, 2)
-  return pct + '%'
+  const max = Math.max(...revenueSeries.value.map(p => p.revenue), 1)
+  return Math.max((value / max) * 100, 2) + '%'
 }
 
 async function fetchRevenue() {
   revenueLoading.value = true
   try {
-    const response   = await sellerApi.dashboardRevenue({ period: revenuePeriod.value })
-    const data       = response.data.data
-    revenueSeries.value = data.series  || []
+    const res           = await sellerApi.dashboardRevenue({ period: revenuePeriod.value })
+    const data          = res.data.data
+    revenueSeries.value = data.series        || []
     revenueTotal.value  = data.total_revenue || 0
   } catch { /* non-critical */ } finally {
     revenueLoading.value = false
@@ -137,14 +138,31 @@ async function fetchRevenue() {
 
 onMounted(async () => {
   try {
-    const [summaryRes, salesRes, topRes] = await Promise.all([
+    const [summaryRes, topRes] = await Promise.all([
       sellerApi.dashboardSummary(),
-      sellerApi.dashboardSales({ per_page: 5 }),
       sellerApi.dashboardTopProducts({ limit: 5 }),
     ])
-    summary.value     = summaryRes.data.data   || {}
-    recentSales.value = salesRes.data.data     || []
-    topProducts.value = topRes.data.data?.products || []
+
+    const d = summaryRes.data.data
+    summary.value = {
+      available_balance: d.balance?.available    ?? 0,
+      total_earned:      d.balance?.total_earned ?? 0,
+      total_sales:       d.sales?.total          ?? 0,
+      average_rating:    d.average_rating        ?? null,
+    }
+
+    // top products — field is "revenue" not "total_revenue"
+    topProducts.value = (topRes.data.data?.products || []).map(p => ({
+      ...p,
+      total_revenue: p.revenue ?? 0,
+    }))
+
+    // recent sales via transactions endpoint
+    try {
+      const salesRes    = await sellerApi.dashboardTransactions({ per_page: 5 })
+      recentSales.value = salesRes.data.data || []
+    } catch { recentSales.value = [] }
+
     await fetchRevenue()
   } catch (err) {
     console.error(err)

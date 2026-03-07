@@ -11,7 +11,7 @@
     <div v-else>
 
       <!-- Store banner -->
-      <div class="relative h-48 bg-gradient-to-r from-brand-600 to-brand-800 overflow-hidden">
+      <div class="relative h-56 bg-gradient-to-r from-brand-600 to-brand-800 overflow-hidden">
         <img
           v-if="store.banner_url"
           :src="store.banner_url"
@@ -22,7 +22,7 @@
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
         <!-- Store header -->
-        <div class="flex items-end gap-5 -mt-12 mb-8">
+        <div class="flex items-end gap-5 -mt-10 mb-8 pt-2">
           <div class="w-24 h-24 rounded-xl border-4 border-white bg-white shadow-md overflow-hidden shrink-0">
             <img
               v-if="store.logo_url"
@@ -43,13 +43,13 @@
               <span v-if="store.average_rating">
                 ★ {{ store.average_rating }}
               </span>
-              <span>{{ store.products_count || 0 }} products</span>
+              <span>{{ products.length }} products</span>
             </div>
           </div>
         </div>
 
         <!-- Bio -->
-        <p v-if="store.bio" class="text-gray-600 mb-8 max-w-2xl">{{ store.bio }}</p>
+        <p v-if="store.store_description" class="text-gray-600 mb-8 max-w-2xl">{{ store.store_description }}</p>
 
         <!-- Products -->
         <h2 class="text-xl font-semibold text-gray-900 mb-6">Products</h2>
@@ -96,7 +96,16 @@ onMounted(async () => {
     const response = await browseApi.store(route.params.slug)
     const data     = response.data.data
     store.value    = data.store || data
-    products.value = data.products || []
+
+    // products is paginated: { data: [...], meta: ... }
+    const raw      = data.products
+    products.value = Array.isArray(raw) ? raw : (raw?.data || [])
+
+    // Normalise each product so ProductCard gets a thumbnail
+    products.value = products.value.map(p => ({
+      ...p,
+      thumbnail: p.thumbnail || p.images?.[0]?.url || null,
+    }))
   } catch {
     store.value = null
   } finally {

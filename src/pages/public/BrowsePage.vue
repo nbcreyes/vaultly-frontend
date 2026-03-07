@@ -181,8 +181,8 @@ async function fetchProducts(page = 1) {
 
 async function fetchCategories() {
   try {
-    const response  = await browseApi.categories()
-    categories.value = response.data.data || []
+    const res        = await browseApi.categories()
+    categories.value = res.data.data?.categories ?? []
   } catch { /* non-critical */ }
 }
 

@@ -168,33 +168,24 @@ onMounted(async () => {
     const [featuredRes, categoriesRes] = await Promise.all([
       browseApi.featured(),
       browseApi.categories(),
-    ]);
+    ])
 
-    const data = featuredRes.data.data;
-    featured.value = data.top_products || [];
-    newArrivals.value = data.new_arrivals || [];
+    const featuredData    = featuredRes.data.data
+    featured.value        = featuredData.top_products || []
+    newArrivals.value     = featuredData.new_arrivals  || []
 
-    // Safely extract categories regardless of nesting
-    const catsRaw = categoriesRes.data.data ?? categoriesRes.data ?? [];
-    categories.value = Array.isArray(catsRaw)
-      ? catsRaw
-      : Object.values(catsRaw);
+    const catsRaw         = categoriesRes.data.data?.categories ?? []
+    categories.value      = Array.isArray(catsRaw) ? catsRaw : []
 
     stats.value = {
-      products: categories.value.reduce(
-        (sum, c) => sum + (c.products_count || 0),
-        0,
-      ),
-      sellers: Math.max(10, featured.value.length * 3),
-      sales: Math.max(
-        50,
-        featured.value.reduce((sum, p) => sum + (p.sales_count || 0), 0),
-      ),
-    };
+      products: categories.value.reduce((sum, c) => sum + (c.products_count || 0), 0),
+      sellers:  Math.max(10, featured.value.length * 3),
+      sales:    Math.max(50, featured.value.reduce((sum, p) => sum + (p.sales_count || 0), 0)),
+    }
   } catch (err) {
-    console.error("Failed to load homepage data", err);
+    console.error('Failed to load homepage data', err)
   } finally {
-    loading.value = false;
+    loading.value = false
   }
-});
+})
 </script>
